@@ -102,8 +102,26 @@ std::vector<uint8_t> BSBPacket::serialize() const {
 
 void BSBComponent::loop()
 {
-    // TODO Handle m_outbound_packets timeouts
-    // TODO Handle m_queries timeouts
+    const auto now = millis();
+    for (auto it = m_outbound_packets.begin(); it != m_outbound_packets.end(); ) {
+        if (now - it->start_time > 1000) {
+            ESP_LOGW(TAG, "Outbound packet timeout");
+            it = m_outbound_packets.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    for (auto it = m_queries.begin(); it != m_queries.end(); ) {
+        if (now - it->start_time > 1000) {
+            ESP_LOGW(TAG, "Query timeout");
+            BSBQueryCallackArgs args;
+            args.error = BSBQueryCallackArgs::ERR_TIMEOUT;
+            it->callback(args);
+            it = m_queries.erase(it);
+        } else {
+            ++it;
+        }
+    }
 
     while(available()) {
         // ESP_LOGI(TAG, "isBusFree: %i", isBusFree());
@@ -246,6 +264,7 @@ void BSBComponent::on_packet(const BSBPacket& packet) {
         if (isReply(m_queries[i].query, packet)) {
             ESP_LOGVV(TAG, "Found reply packet");
             BSBQueryCallackArgs callbackArgs;
+            callbackArgs.error = BSBQueryCallackArgs::ERR_OK;
             callbackArgs.query = m_queries[i].query;
             callbackArgs.reply = packet;
             m_queries[i].callback(callbackArgs);

@@ -36,6 +36,14 @@ public:
 };
 
 struct BSBQueryCallackArgs {
+
+    enum Error {
+        ERR_OK = 0,
+        ERR_TIMEOUT = 1,
+    };
+
+    Error error;
+
     BSBPacket query;
 
     BSBPacket reply;
