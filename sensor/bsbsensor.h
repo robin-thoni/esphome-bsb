@@ -54,5 +54,11 @@ public:
     virtual bool parseReply(BSBQueryCallackArgs args, float* result);
 };
 
+class BSBSensorPercent : public BSBSensor {
+
+public:
+    virtual bool parseReply(BSBQueryCallackArgs args, float* result);
+};
+
 }
 }

@@ -42,6 +42,11 @@ BSBSensorEnum = bsb_ns.class_(
     BSBSensor,
 )
 
+BSBSensorPercent = bsb_ns.class_(
+    "BSBSensorPercent",
+    BSBSensor,
+)
+
 BSBQueryCallackArgs = bsb_ns.class_(
     "BSBQueryCallackArgs",
 )
@@ -79,6 +84,19 @@ CONFIG_SCHEMA = cv.typed_schema(
         .extend(
             {
                 cv.GenerateID(): cv.declare_id(BSBSensorEnum),
+                cv.GenerateID(CONF_BSB_ID): cv.use_id(BSBComponent),
+            }
+        ),
+        "percent": sensor.sensor_schema(
+            unit_of_measurement="%",
+            accuracy_decimals=0,
+            state_class="measurement",
+        )
+        .extend(BSB_QUERY_BASE_SCHEMA)
+        .extend(cv.polling_component_schema("60s"))
+        .extend(
+            {
+                cv.GenerateID(): cv.declare_id(BSBSensorPercent),
                 cv.GenerateID(CONF_BSB_ID): cv.use_id(BSBComponent),
             }
         ),

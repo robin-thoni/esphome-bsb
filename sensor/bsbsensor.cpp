@@ -61,5 +61,15 @@ bool BSBSensorEnum::parseReply(BSBQueryCallackArgs args, float* result) {
     }
 }
 
+bool BSBSensorPercent::parseReply(BSBQueryCallackArgs args, float* result) {
+    if (args.reply.data.size() == 2) {
+        *result = args.reply.data[1];
+        return true;
+    } else {
+        ESP_LOGW(TAG, "Unable to decode percent: %s", format_hex_pretty(args.reply.data).c_str());
+        return false;
+    }
+}
+
 }
 }
