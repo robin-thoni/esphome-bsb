@@ -18,6 +18,10 @@ BSBComponent = bsb_ns.class_(
     "BSBComponent", cg.Component
 )
 
+BSBQueryCallackArgs = bsb_ns.class_(
+    "BSBQueryCallackArgs",
+)
+
 def validate_raw_data(value):
     if isinstance(value, str):
         return value.encode("utf-8")

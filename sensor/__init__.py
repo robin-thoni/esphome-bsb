@@ -11,6 +11,7 @@ from esphome.const import (
 from .. import (
     bsb_ns,
     BSBComponent,
+    BSBQueryCallackArgs,
     CONF_BSB_ID, 
     CONF_BSB_TYPE,
     CONF_BSB_CMD,
@@ -45,10 +46,6 @@ BSBSensorEnum = bsb_ns.class_(
 BSBSensorPercent = bsb_ns.class_(
     "BSBSensorPercent",
     BSBSensor,
-)
-
-BSBQueryCallackArgs = bsb_ns.class_(
-    "BSBQueryCallackArgs",
 )
 
 CONFIG_SCHEMA = cv.typed_schema(
