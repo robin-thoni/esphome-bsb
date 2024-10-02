@@ -120,6 +120,7 @@ void BSBComponent::loop()
                 uint8_t length = m_buffer[3];
                 if (m_buffer.size() >= length) {
 
+                    // TODO just check if local address is us?
                     bool is_outbound_packet = false;
                     for (auto i = 0; i < m_outbound_packets.size(); ++i) {
                         if (m_outbound_packets[i].data == m_buffer) {
