@@ -23,8 +23,10 @@ void BSBSensorLambda::setLambda(std::function<float(BSBQueryCallackArgs)> callba
 
 void BSBSensorLambda::update() {
     parent_->sendQuery(m_type, m_cmd, m_data, [this](BSBQueryCallackArgs args) {
-        auto res = m_callback(args);
-        publish_state(res);
+        if (args.error == BSBQueryCallackArgs::ERR_OK) {
+            auto res = m_callback(args);
+            publish_state(res);
+        }
     });
 }
 
