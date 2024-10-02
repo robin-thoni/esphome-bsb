@@ -151,6 +151,7 @@ void BSBComponent::loop()
 bool BSBComponent::sendData(std::vector<uint8_t> data) {
     if (isBusFree()) {
         if (m_outbound_packets.size() > 10) { // TODO Arbitrary number to avoid overflow
+            ESP_LOGW(TAG, "Outbound packets list is full");
             return false;
         }
         #ifdef USE_UART_DEBUGGER
@@ -181,6 +182,7 @@ bool BSBComponent::sendPacket(const BSBPacket& packet) {
 
 bool BSBComponent::sendQuery(const BSBPacket& packet, std::function<void(BSBQueryCallackArgs)> callback) {
     if (m_queries.size() > 10) { // TODO Arbitrary number to avoid overflow
+        ESP_LOGW(TAG, "Queries list is full");
         return false;
     }
     if (sendPacket(packet)) {
