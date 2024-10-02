@@ -37,6 +37,11 @@ BSBSensorTemp = bsb_ns.class_(
     BSBSensor,
 )
 
+BSBSensorEnum = bsb_ns.class_(
+    "BSBSensorEnum",
+    BSBSensor,
+)
+
 BSBQueryCallackArgs = bsb_ns.class_(
     "BSBQueryCallackArgs",
 )
@@ -64,6 +69,16 @@ CONFIG_SCHEMA = cv.typed_schema(
         .extend(
             {
                 cv.GenerateID(): cv.declare_id(BSBSensorTemp),
+                cv.GenerateID(CONF_BSB_ID): cv.use_id(BSBComponent),
+            }
+        ),
+        "enum": sensor.sensor_schema(
+        )
+        .extend(BSB_QUERY_BASE_SCHEMA)
+        .extend(cv.polling_component_schema("60s"))
+        .extend(
+            {
+                cv.GenerateID(): cv.declare_id(BSBSensorEnum),
                 cv.GenerateID(CONF_BSB_ID): cv.use_id(BSBComponent),
             }
         ),

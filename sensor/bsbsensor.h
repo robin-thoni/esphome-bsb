@@ -48,5 +48,11 @@ public:
     virtual bool parseReply(BSBQueryCallackArgs args, float* result);
 };
 
+class BSBSensorEnum : public BSBSensor {
+
+public:
+    virtual bool parseReply(BSBQueryCallackArgs args, float* result);
+};
+
 }
 }
