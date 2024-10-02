@@ -17,12 +17,16 @@ public:
 
     void setData(const std::vector<uint8_t>& data);
 
+    void update() override;
+
 protected:
     uint8_t m_type;
 
     uint32_t m_cmd;
 
     std::vector<uint8_t> m_data;
+
+    virtual bool parseReply(BSBQueryCallackArgs args, float* result);
 
 };
 
@@ -31,7 +35,7 @@ class BSBSensorLambda : public BSBSensor {
 public:
     void setLambda(std::function<float(BSBQueryCallackArgs)> callback);
 
-    void update() override;
+    virtual bool parseReply(BSBQueryCallackArgs args, float* result);
 
 protected:
     std::function<float(BSBQueryCallackArgs)> m_callback;
@@ -41,8 +45,7 @@ protected:
 class BSBSensorTemp : public BSBSensor {
 
 public:
-    void update() override;
-
+    virtual bool parseReply(BSBQueryCallackArgs args, float* result);
 };
 
 }
