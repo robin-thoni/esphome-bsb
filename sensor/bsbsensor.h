@@ -38,5 +38,12 @@ protected:
 
 };
 
+class BSBSensorTemp : public BSBSensor {
+
+public:
+    void update() override;
+
+};
+
 }
 }

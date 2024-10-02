@@ -32,6 +32,11 @@ BSBSensorLambda = bsb_ns.class_(
     BSBSensor,
 )
 
+BSBSensorTemp = bsb_ns.class_(
+    "BSBSensorTemp",
+    BSBSensor,
+)
+
 BSBQueryCallackArgs = bsb_ns.class_(
     "BSBQueryCallackArgs",
 )
@@ -46,6 +51,20 @@ CONFIG_SCHEMA = cv.typed_schema(
                 cv.GenerateID(): cv.declare_id(BSBSensorLambda),
                 cv.GenerateID(CONF_BSB_ID): cv.use_id(BSBComponent),
                 cv.Required(CONF_LAMBDA): cv.returning_lambda,
+            }
+        ),
+        "temp": sensor.sensor_schema(
+            unit_of_measurement="°C",
+            accuracy_decimals=1,
+            device_class="temperature",
+            state_class="measurement",
+        )
+        .extend(BSB_QUERY_BASE_SCHEMA)
+        .extend(cv.polling_component_schema("60s"))
+        .extend(
+            {
+                cv.GenerateID(): cv.declare_id(BSBSensorTemp),
+                cv.GenerateID(CONF_BSB_ID): cv.use_id(BSBComponent),
             }
         ),
     }

@@ -30,5 +30,16 @@ void BSBSensorLambda::update() {
     });
 }
 
+void BSBSensorTemp::update() {
+    parent_->sendQuery(m_type, m_cmd, m_data, [this](BSBQueryCallackArgs args) {
+        if (args.error == BSBQueryCallackArgs::ERR_OK && args.reply.data.size() == 3) {
+            auto res = (args.reply.data[1] << 8 | args.reply.data[2]) / 64.0f;
+            publish_state(res);
+        } else {
+            ESP_LOGW(TAG, "Unable to decode temp: %s", format_hex_pretty(args.reply.data).c_str());
+        }
+    });
+}
+
 }
 }
