@@ -104,7 +104,7 @@ void BSBComponent::loop()
 {
     const auto now = millis();
     for (auto it = m_outbound_packets.begin(); it != m_outbound_packets.end(); ) {
-        if (now - it->start_time > 1000) {
+        if (now - it->start_time > 5000) {
             ESP_LOGW(TAG, "Outbound packet timeout");
             it = m_outbound_packets.erase(it);
         } else {
@@ -112,7 +112,7 @@ void BSBComponent::loop()
         }
     }
     for (auto it = m_queries.begin(); it != m_queries.end(); ) {
-        if (now - it->start_time > 1000) {
+        if (now - it->start_time > 5000) {
             ESP_LOGW(TAG, "Query timeout");
             BSBQueryCallackArgs args;
             args.error = BSBQueryCallackArgs::ERR_TIMEOUT;
