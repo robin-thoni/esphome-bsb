@@ -27,6 +27,8 @@ public:
 
     bool parse(const std::vector<uint8_t>& data, bool isReply = true);
 
+    uint8_t size() const;
+
     std::vector<uint8_t> serialize() const;
 };
 

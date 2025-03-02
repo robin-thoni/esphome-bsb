@@ -78,10 +78,14 @@ bool BSBPacket::parse(const std::vector<uint8_t>& data, bool isReply) {
     return true;
 }
 
+uint8_t BSBPacket::size() const {
+    return data.size() + 11;
+}
+
 std::vector<uint8_t> BSBPacket::serialize() const {
     uint16_t crc = 0;
     std::vector<uint8_t> d;
-    d.reserve(data.size() + 11);
+    d.reserve(size());
     crc = _push_back_with_crc(d, crc, 0xDE);
     crc = _push_back_with_crc(d, crc, src_addr | 0x80);
     crc = _push_back_with_crc(d, crc, dst_addr);
