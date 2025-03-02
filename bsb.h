@@ -109,6 +109,8 @@ protected:
 
     std::map<BSBComponent::DiagType, sensor::Sensor*> m_diag_sensors;
 
+    uint32_t m_bus_last_activity{0};
+
     bool readByte(uint8_t* byte);
 
     void on_packet(const BSBPacket& packet);

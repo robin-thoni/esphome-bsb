@@ -298,7 +298,10 @@ bool BSBComponent::readByte(uint8_t* byte) {
 }
 
 bool BSBComponent::isBusFree() {
-    return !available() && m_buffer.size() == 0; // TODO
+    // From https://github.com/fredlcore/BSB-LAN/blob/05ffbfb357ba87ab7de0d5febdf50d78b0f36bb4/BSB_LAN/src/BSB/bsb.cpp#L398
+    // range 63 .. 82 ms, BSB mimimum delay between telegrams is 59 ms (25 for LPB -> miwi), plus duration of one full (32 bytes) telegram (3 ms), plus random amount of 1-20 ms.
+    auto waitfree = random(1,20) + 3 + 59;
+    return !available() && m_buffer.size() == 0 && m_bus_last_activity + waitfree <= millis(); // TODO
 }
 
 void BSBComponent::publishDiag(DiagType type, float value) {
