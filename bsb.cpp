@@ -286,8 +286,7 @@ bool BSBComponent::readByte(uint8_t* byte) {
 }
 
 bool BSBComponent::isBusFree() {
-    return true; // TODO for testing
-    // return digitalRead(16); // TODO hardcoded for testing
+    return !available() && m_buffer.size() == 0; // TODO
 }
 
 }
