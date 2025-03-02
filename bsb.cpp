@@ -148,48 +148,43 @@ void BSBComponent::loop()
         }
     }
 
-    while(available()) {
-        // ESP_LOGI(TAG, "isBusFree: %i", isBusFree());
-        uint8_t byte;
-        if (!readByte(&byte)) {
-            return;
-        }
+    bool retry;
+    uint8_t byte;
+    BSBPacket packet;
 
-        if (m_buffer.size() == 0 && (byte == 0xDE || byte == 0xDC)) {
-            m_buffer.push_back(byte);
-        } else if (m_buffer.size() != 0) {
-            m_buffer.push_back(byte);
-            if (m_buffer.size() >= 4) {
-                uint8_t length = m_buffer[3];
-                if (m_buffer.size() >= length) {
+    while(available() && readByte(&byte)) {
+        m_buffer.push_back(byte);
+        do {
+            retry = false;
+            auto result = packet.parse(m_buffer);
+            if (result == BSBPacket::OK) {
 
-                    // TODO just check if local address is us?
-                    bool is_outbound_packet = false;
-                    for (auto i = 0; i < m_outbound_packets.size(); ++i) {
-                        if (m_outbound_packets[i].data == m_buffer) {
-                            m_outbound_packets.erase(m_outbound_packets.begin() + i);
-                            is_outbound_packet = true;
-                            ESP_LOGVV(TAG, "Found outbound packet");
-                            break;
-                        }
+                bool is_outbound_packet = false;
+                for (auto i = 0; i < m_outbound_packets.size(); ++i) {
+                    if (m_outbound_packets[i].data == m_buffer) {
+                        m_outbound_packets.erase(m_outbound_packets.begin() + i);
+                        is_outbound_packet = true;
+                        ESP_LOGVV(TAG, "Found outbound packet");
+                        break;
                     }
-                    if (!is_outbound_packet) {
-                        #ifdef USE_UART_DEBUGGER
-                        uart::UARTDebug::log_hex(uart::UARTDirection::UART_DIRECTION_RX, m_buffer, ' ');
-                        #endif
-
-                        BSBPacket packet;
-                        if (packet.parse(m_buffer)) {
-                            on_packet(packet);
-                        } else {
-                            ESP_LOGW(TAG, "Failed to parse incomming packet");
-                            incrementDiag(PARSE_ERRORS);
-                        }
-                    }
-                    m_buffer.clear();
                 }
+
+                if (!is_outbound_packet) {
+                    on_packet(packet);
+                }
+
+                m_buffer.erase(m_buffer.begin(), m_buffer.begin() + packet.size());
+                retry = true;
+            } else if (result != BSBPacket::NOT_ENOUGH_DATA) {
+                if (result == BSBPacket::BAD_CRC) {
+                    ESP_LOGW(TAG, "CRC error: %s", esphome::format_hex_pretty(m_buffer).c_str());
+                    packet.dump();
+                    incrementDiag(PARSE_ERRORS);
+                }
+                m_buffer.erase(m_buffer.begin());
+                retry = true;
             }
-        }
+        } while(retry && m_buffer.size() > 0);
     }
 }
 
@@ -316,6 +311,7 @@ bool BSBComponent::readByte(uint8_t* byte) {
     if (!read_byte(byte)) {
         return false;
     }
+    m_bus_last_activity = millis();
     *byte ^= 0xFF;
     return true;
 }
