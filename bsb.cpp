@@ -114,7 +114,8 @@ void BSBComponent::loop()
     }
     for (auto it = m_queries.begin(); it != m_queries.end(); ) {
         if (now - it->start_time > 5000) {
-            ESP_LOGW(TAG, "Query timeout");
+            ESP_LOGW(TAG, "Query timeout:");
+            it->query.dump();
             incrementDiag(QUERY_TIMEOUTS);
             BSBQueryCallackArgs args;
             args.error = BSBQueryCallackArgs::ERR_TIMEOUT;
