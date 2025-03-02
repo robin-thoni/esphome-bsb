@@ -57,25 +57,43 @@ std::vector<uint8_t> BSBPacket::serializeCmd(uint32_t cmd) {
     return std::vector<uint8_t>({A1, A2, A3, A4});
 }
 
-bool BSBPacket::parse(const std::vector<uint8_t>& data, bool isReply) {
-    if (data.size() < 11 || (data[0] != 0xDE && data[0] != 0xDC)) {
-        return false;
+BSBPacket::ParseResult BSBPacket::parse(const std::vector<uint8_t>& data, bool isReply) {
+    if (data.size() < 11) {
+        ESP_LOGVV(TAG, "Packet is too small. Expecting at least 11, got : %i", data.size());
+        return NOT_ENOUGH_DATA;
+    }
+    if (data[0] != 0xDE && data[0] != 0xDC) {
+        ESP_LOGVV(TAG, "Bad packet magic number");
+        return BAD_MAGIC_NUMBER;
+    }
+    uint8_t packet_size = data[3];
+    if (packet_size < 11 || packet_size > 32) {
+        ESP_LOGVV(TAG, "Bad packet size: %i", packet_size);
+        return BAD_SIZE;
+    }
+    if (data.size() < packet_size) {
+        ESP_LOGVV(TAG, "Packet is too small. Expecting at least %i, got : %i", data[3], data.size());
+        return NOT_ENOUGH_DATA;
     }
 
     uint16_t crc = 0;
-    for (auto i = 0; i < data.size(); ++i) {
+    for (auto i = 0; i < packet_size; ++i) {
         crc = _crc_xmodem_update(crc, data[i]);
-    }
-    if (crc) {
-        return false;
     }
 
     src_addr = data[1] & 0x7F;
     dst_addr = data[2];
     type = data[4];
     cmd = BSBPacket::parseCmd(std::vector<uint8_t>(data.begin() + 5, data.begin() + 9), isReply);
-    this->data = std::vector<uint8_t>(data.begin() + 9, data.end() - 2);
-    return true;
+    this->data = std::vector<uint8_t>(data.begin() + 9, data.begin() + 9 + packet_size - 11);
+
+    // Differ the error to the end so we can still analyse the content
+    if (crc) {
+        ESP_LOGVV(TAG, "Bad packet CRC: %i", crc);
+        return BAD_CRC;
+    } else {
+        return OK;
+    }
 }
 
 uint8_t BSBPacket::size() const {

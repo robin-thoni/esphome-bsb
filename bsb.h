@@ -11,6 +11,14 @@ namespace bsb {
 
 class BSBPacket {
 public:
+    enum ParseResult{
+        OK = 1,
+        NOT_ENOUGH_DATA = 2,
+        BAD_MAGIC_NUMBER = 3,
+        BAD_CRC = 4,
+        BAD_SIZE = 5,
+    };
+
     uint8_t src_addr;
     uint8_t dst_addr;
 
@@ -25,7 +33,7 @@ public:
 
     static std::vector<uint8_t> serializeCmd(uint32_t cmd);
 
-    bool parse(const std::vector<uint8_t>& data, bool isReply = true);
+    BSBPacket::ParseResult parse(const std::vector<uint8_t>& data, bool isReply = true);
 
     uint8_t size() const;
 
