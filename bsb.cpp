@@ -106,6 +106,7 @@ void BSBComponent::loop()
     for (auto it = m_outbound_packets.begin(); it != m_outbound_packets.end(); ) {
         if (now - it->start_time > 5000) {
             ESP_LOGW(TAG, "Outbound packet timeout");
+            incrementDiag(OUTBOUND_PACKET_TIMEOUTS);
             it = m_outbound_packets.erase(it);
         } else {
             ++it;
@@ -114,6 +115,7 @@ void BSBComponent::loop()
     for (auto it = m_queries.begin(); it != m_queries.end(); ) {
         if (now - it->start_time > 5000) {
             ESP_LOGW(TAG, "Query timeout");
+            incrementDiag(QUERY_TIMEOUTS);
             BSBQueryCallackArgs args;
             args.error = BSBQueryCallackArgs::ERR_TIMEOUT;
             it->callback(args);
@@ -158,6 +160,7 @@ void BSBComponent::loop()
                             on_packet(packet);
                         } else {
                             ESP_LOGW(TAG, "Failed to parse incomming packet");
+                            incrementDiag(PARSE_ERRORS);
                         }
                     }
                     m_buffer.clear();
@@ -169,8 +172,10 @@ void BSBComponent::loop()
 
 bool BSBComponent::sendData(std::vector<uint8_t> data) {
     if (isBusFree()) {
+        ESP_LOGV(TAG, "Bus is free");
         if (m_outbound_packets.size() > 10) { // TODO Arbitrary number to avoid overflow
             ESP_LOGW(TAG, "Outbound packets list is full");
+            incrementDiag(OUTBOUND_PACKET_LIST_FILL);
             return false;
         }
         #ifdef USE_UART_DEBUGGER
@@ -190,6 +195,7 @@ bool BSBComponent::sendData(std::vector<uint8_t> data) {
         return true;
     } else {
         ESP_LOGW(TAG, "Bus is not free");
+        incrementDiag(BUS_BUSY);
         return false;
     }
 }
@@ -202,6 +208,7 @@ bool BSBComponent::sendPacket(const BSBPacket& packet) {
 bool BSBComponent::sendQuery(const BSBPacket& packet, std::function<void(BSBQueryCallackArgs)> callback) {
     if (m_queries.size() > 10) { // TODO Arbitrary number to avoid overflow
         ESP_LOGW(TAG, "Queries list is full");
+        incrementDiag(OUTBOUND_QUERY_LIST_FILL);
         return false;
     }
     if (sendPacket(packet)) {
@@ -259,6 +266,11 @@ void BSBComponent::setDstAddress(uint8_t addr) {
     m_dst_addr = addr;
 }
 
+void BSBComponent::setDiagSensor(BSBComponent::DiagType type, sensor::Sensor* sensor) {
+    m_diag_sensors[type] = sensor;
+    sensor->publish_state(0.0f);
+}
+
 void BSBComponent::on_packet(const BSBPacket& packet) {
     for (auto i = 0; i < m_queries.size(); ++i) {
         if (isReply(m_queries[i].query, packet)) {
@@ -287,6 +299,20 @@ bool BSBComponent::readByte(uint8_t* byte) {
 
 bool BSBComponent::isBusFree() {
     return !available() && m_buffer.size() == 0; // TODO
+}
+
+void BSBComponent::publishDiag(DiagType type, float value) {
+    auto it = m_diag_sensors.find(type);
+    if (it != m_diag_sensors.end()) {
+        it->second->publish_state(value);
+    }
+}
+
+void BSBComponent::incrementDiag(DiagType type) {
+    auto it = m_diag_sensors.find(type);
+    if (it != m_diag_sensors.end()) {
+        it->second->publish_state(it->second->state + 1);
+    }
 }
 
 }

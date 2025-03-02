@@ -21,6 +21,8 @@ from .. import (
 
 DEPENDENCIES = ["bsb"]
 
+BSBDiagSensor = sensor.Sensor
+
 BSBSensor = bsb_ns.class_(
     "BSBSensor",
     sensor.Sensor,
@@ -48,8 +50,34 @@ BSBSensorPercent = bsb_ns.class_(
     BSBSensor,
 )
 
+diag_prefix = "diag-"
+DiagType = BSBComponent.enum("DiagType")
+
+# Keep in sync w/ DiagType in bsb.h
+DIAG_MAPPING = {
+    "parse-errors": DiagType.PARSE_ERRORS,
+    "query-timeouts": DiagType.QUERY_TIMEOUTS,
+    "outbound-packet-timeouts": DiagType.OUTBOUND_PACKET_TIMEOUTS,
+    "bus-busy": DiagType.BUS_BUSY,
+    "outbound-packet-list-full": DiagType.OUTBOUND_PACKET_LIST_FILL,
+    "outbound-query-list-full": DiagType.OUTBOUND_QUERY_LIST_FILL,
+}
+
+DIAG_BASE_SCHEMA = sensor.sensor_schema(
+    accuracy_decimals=0,
+    state_class="total_increasing"
+).extend(
+    {
+        cv.GenerateID(): cv.declare_id(BSBDiagSensor),
+        cv.GenerateID(CONF_BSB_ID): cv.use_id(BSBComponent),
+    }
+)
+
 CONFIG_SCHEMA = cv.typed_schema(
     {
+        **{
+            f"{diag_prefix}{k}": DIAG_BASE_SCHEMA for k, v in DIAG_MAPPING.items()
+        },
         "lambda": sensor.sensor_schema()
         .extend(BSB_QUERY_BASE_SCHEMA)
         .extend(cv.polling_component_schema("60s"))
@@ -103,16 +131,20 @@ CONFIG_SCHEMA = cv.typed_schema(
 async def to_code(config):
     parent = await cg.get_variable(config[CONF_BSB_ID])
     var = await sensor.new_sensor(config)
-    await cg.register_parented(var, parent)
-    await cg.register_component(var, config)
 
-    cg.add(var.setType(config[CONF_BSB_TYPE]))
-    cg.add(var.setCmd(config[CONF_BSB_CMD]))
-    if CONF_BSB_DATA in config:
-        cg.add(var.setData(config[CONF_BSB_DATA]))
+    if config[CONF_TYPE].startswith(diag_prefix):
+        diag_type = config[CONF_TYPE][len(diag_prefix):]
+        cg.add(parent.setDiagSensor(DIAG_MAPPING[diag_type], var))
+    else:
+        await cg.register_parented(var, parent)
+        await cg.register_component(var, config)
+        cg.add(var.setType(config[CONF_BSB_TYPE]))
+        cg.add(var.setCmd(config[CONF_BSB_CMD]))
+        if CONF_BSB_DATA in config:
+            cg.add(var.setData(config[CONF_BSB_DATA]))
 
-    if config[CONF_TYPE] == "lambda":
-        lambda_ = await cg.process_lambda(
-            config[CONF_LAMBDA], [(BSBQueryCallackArgs, "x")], return_type=cg.float_
-        )
-        cg.add(var.setLambda(lambda_))
+        if config[CONF_TYPE] == "lambda":
+            lambda_ = await cg.process_lambda(
+                config[CONF_LAMBDA], [(BSBQueryCallackArgs, "x")], return_type=cg.float_
+            )
+            cg.add(var.setLambda(lambda_))
